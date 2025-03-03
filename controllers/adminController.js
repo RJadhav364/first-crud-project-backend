@@ -67,7 +67,7 @@ const handleListingAdminSubAdmin = async(req,res) => {
                     const allAuthorizedUsers = page == "no_pagination" ? await adminSModel.find({}) : await adminSModel.find({}).skip(skip).limit(limit);
                     let allAuthorizedUsersCount = await adminSModel.countDocuments();
                     let totaPages = Math.ceil(allAuthorizedUsersCount / limit)
-                    res.status(200).send({message: "Data Fetch successfully", data: allAuthorizedUsers,total_records: allAuthorizedUsersCount , total_page: totaPages , current_page:page})
+                    res.status(200).send({message: "Data Fetch successfully", data: allAuthorizedUsers,total_records: allAuthorizedUsersCount , total_page: totaPages , current_page:page,skipDataCount: skip})
             //         break;
             //     default:
             //         res.status(401).send({message: "Token has expired"});
@@ -97,7 +97,7 @@ const handleAuthorizedLoginSystem = async(req,res) => {
         // console.log("credentialsGot",req.body)
         const findCredentialsDB = await adminSModel.findOne({email: credentialsGot.email});
         const findCredentialsUserDB = await userSModel.findOne({email: credentialsGot.email});
-        console.log("findCredentialsDB",findCredentialsUserDB)
+        // console.log("findCredentialsDB",findCredentialsUserDB)
         switch(true){
             case findCredentialsDB == null && findCredentialsUserDB == null:
                 res.status(404).send({message: "User not found"});

@@ -6,6 +6,7 @@ import cors from "cors"
 import userController from "./routes/userRoutes.js";
 const app = express();
 const PORT = 9000;
+app.use(cors(corsOptions));
 connectionMongoDB();
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
@@ -15,7 +16,7 @@ var corsOptions = {
     allowedHeaders: "Content-Type,Authorization",  // Allowed headers
     optionsSuccessStatus: 200  // Some legacy browsers choke on 204
 };
-app.use(cors(corsOptions));
+
 app.use("/admin", adminController)
 app.use("/role", userController)
 app.listen(PORT, () => {

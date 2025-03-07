@@ -64,8 +64,9 @@ const handleListingAdminSubAdmin = async(req,res) => {
             // console.log("tokenResult",tokenResult);
             // switch(true){
             //     case tokenResult.result == "false":
-                    const allAuthorizedUsers = page == "no_pagination" ? await adminSModel.find({}) : await adminSModel.find({}).skip(skip).limit(limit);
-                    let allAuthorizedUsersCount = await adminSModel.countDocuments();
+                    const allAuthorizedUsers = page == "no_pagination" ? await adminSModel.find({isDeleted: false}) : await adminSModel.find({isDeleted: false}).skip(skip).limit(limit);
+                    // console.log("allAuthorizedUsers",await adminSModel.find({ isDeleted: !true}))
+                    let allAuthorizedUsersCount = await adminSModel.countDocuments({isDeleted: false});
                     let totaPages = Math.ceil(allAuthorizedUsersCount / limit)
                     res.status(200).send({message: "Data Fetch successfully", data: allAuthorizedUsers,total_records: allAuthorizedUsersCount , total_page: totaPages , current_page:page,skipDataCount: skip})
             //         break;
@@ -97,9 +98,9 @@ const handleAuthorizedLoginSystem = async(req,res) => {
         // console.log("credentialsGot",req.body)
         const findCredentialsDB = await adminSModel.findOne({email: credentialsGot.email});
         const findCredentialsUserDB = await userSModel.findOne({email: credentialsGot.email});
-        // console.log("findCredentialsDB",findCredentialsUserDB)
+        console.log("findCredentialsDB",findCredentialsDB)
         switch(true){
-            case findCredentialsDB == null && findCredentialsUserDB == null:
+            case (findCredentialsDB == null && findCredentialsUserDB == null) || findCredentialsDB.isDeleted == true:
                 res.status(404).send({message: "User not found"});
                 break;
             case findCredentialsDB != null:
@@ -114,8 +115,9 @@ const handleAuthorizedLoginSystem = async(req,res) => {
                         firstname: findCredentialsDB.firstname,
                         hasAllRights: findCredentialsDB.hasAllRights,
                         mnumber: findCredentialsDB.mnumber,
+                        isDeleted: findCredentialsDB.isDeleted
                     };
-                    // console.log(payload, "payload");
+                    console.log(payload, "payload");
                     res.status(200).send({message: "User Logged In Successfully", data: {
                         token: await findCredentialsDB.generateToken(payload),
                         id: findCredentialsDB._id,
@@ -242,8 +244,11 @@ const handleDeleteSubadmin = async(req,res) => {
             // console.log("tokenResult",tokenResult);
             if(tokenResult.decode.role == "admin"){
                 // console.log("inside if");
-                const deleteAuthorizedId = await adminSModel.findOneAndDelete({_id: req.params.id });
+                const deleteAuthorizedId = await adminSModel.findById({_id: req.params.id });
                 // console.log(await adminSModel.findById({_id: req.params.id }))
+                await adminSModel.findByIdAndUpdate(deleteAuthorizedId._id, {
+                    isDeleted: true
+                })
                 res.status(200).send({message: "Data deleted successfully" });
             } else{
                 res.status(403).send({message: "You do not have permission to perform this action"})

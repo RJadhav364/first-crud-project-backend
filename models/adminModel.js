@@ -27,6 +27,10 @@ const adminSchema = new Schema({
     mnumber: {
         type: String,
         required: true
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
     }
 });
 

@@ -30,6 +30,10 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
+    status: {
+        type: String,
+        required: true
+    },
     handledSubAdmin: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "operationAdmin",

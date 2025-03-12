@@ -52,14 +52,13 @@ const handleCreateNewSuperior = async(req,res) => {
 
 const handleListingAdminSubAdmin = async(req,res) => {
     try{
-        let page = req.query.page == "no_pagination" ? "no_pagination" : Number(req.query.page) || 1;
+        let page = req.query.page == "no_pagination" ? "no_pagination" : req.query.page == "only_count" ? "only_count" : Number(req.query.page) || 1;
         let limit = 10;
         let skip = (page - 1) * limit;
         const headersToken = req.headers['authorization']
         // console.log(headersToken)
         if(headersToken){
             const token  = headersToken.split(" ")[1];
-            // console.log("page",page);
             const tokenResult = await verifyJWTToken(token);
             // console.log("tokenResult",tokenResult);
             // switch(true){
@@ -68,7 +67,7 @@ const handleListingAdminSubAdmin = async(req,res) => {
                     // console.log("allAuthorizedUsers",await adminSModel.find({ isDeleted: !true}))
                     let allAuthorizedUsersCount = await adminSModel.countDocuments({isDeleted: false});
                     let totaPages = Math.ceil(allAuthorizedUsersCount / limit)
-                    res.status(200).send({message: "Data Fetch successfully", data: allAuthorizedUsers,total_records: allAuthorizedUsersCount , total_page: totaPages , current_page:page,skipDataCount: skip})
+                    res.status(200).send({message: "Data Fetch successfully", data: page == "only_count" ? [] : allAuthorizedUsers,total_records: allAuthorizedUsersCount , total_page: totaPages , current_page:page,skipDataCount: skip})
             //         break;
             //     default:
             //         res.status(401).send({message: "Token has expired"});

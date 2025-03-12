@@ -42,20 +42,18 @@ const handleCreateNewUser = async(req,res) => {
 
 const handleGetUsers = async(req,res) => {
     try{
-        let page = Number(req.query.page) || 1;
+        let page =  req.query.page == "only_count" ? "only_count" : Number(req.query.page) || 1;
         let limit = 10;
         let skip = (page - 1) * limit;
-        console.log(skip)
         const headersToken = req.headers['authorization'];
         if(headersToken){
             const token  = headersToken.split(" ")[1];
-            // console.log(token);
+            // console.log(await userSModel.find({}));
             const tokenResult = await verifyJWTToken(token);
-            console.log(tokenResult.decode)
             let newRegistration 
             let adminModeldata = await adminSModel.find({});
             // let allAuthorizedUsersCoun2t = await userSModel.countDocuments();
-            // console.log(allAuthorizedUsersCoun2t);
+            // console.log(adminModeldata);
             let passedData;
             let allUsersCount;
             let totaPages;
@@ -64,7 +62,7 @@ const handleGetUsers = async(req,res) => {
                     // console.log("subadmin found",newRegistration);
                     newRegistration = await userSModel.find({handledSubAdmin: tokenResult.decode.id}).skip(skip).limit(limit);
                     const subadminWiseData = await newRegistration.filter(({handledSubAdmin}) => handledSubAdmin == tokenResult.decode.id);
-                    passedData = await subadminWiseData.map(({_id,firstname,lastname,email,role,number,handledSubAdmin}) => ({
+                    passedData = await subadminWiseData.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => ({
                         id: _id,
                         firstname,
                         lastname,
@@ -72,6 +70,7 @@ const handleGetUsers = async(req,res) => {
                         role,
                         number,
                         handledSubAdmin,
+                        status,
                         authorizedDetails: adminModeldata.find(value => value._id.equals(handledSubAdmin))
                     }))
                     allUsersCount = await userSModel.countDocuments({handledSubAdmin: tokenResult.decode.id});
@@ -80,7 +79,7 @@ const handleGetUsers = async(req,res) => {
                     break;
                 default:
                     newRegistration = await userSModel.find({}).skip(skip).limit(limit);
-                    passedData = await newRegistration.map(({_id,firstname,lastname,email,role,number,handledSubAdmin}) => ({
+                    passedData = await newRegistration.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => ({
                         id: _id,
                         firstname,
                         lastname,
@@ -88,8 +87,12 @@ const handleGetUsers = async(req,res) => {
                         role,
                         number,
                         handledSubAdmin,
+                        status,
                         authorizedDetails: adminModeldata.find(value => value._id.equals(handledSubAdmin))
+                        // console.log(data.firstname,data.role,data.status)
                     }))
+                    // await newRegistration.map((data) => console.log(data[0]));
+                    // await newRegistration.map((data) => console.log("data",data.email,data["status"]));
                             // console.log(passedData)
                     allUsersCount = await userSModel.countDocuments();
                     totaPages = Math.ceil(allUsersCount / limit)
@@ -127,6 +130,7 @@ const handleGetParticularUsers = async(req,res) => {
             role: fetchDataById.role,
             handledSubAdmin: fetchDataById.handledSubAdmin,
             number: fetchDataById.number,
+            status: fetchDataById.status
         }
         let adminDetails = await adminSModel.findById({_id: passObject.handledSubAdmin});
         // console.log(adminDetails);

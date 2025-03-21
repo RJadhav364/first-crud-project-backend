@@ -43,7 +43,10 @@ const handleCreateNewUser = async(req,res) => {
 const handleGetUsers = async(req,res) => {
     try{
         let page =  req.query.page == "only_count" ? "only_count" : Number(req.query.page) || 1;
-        let limit = 10;
+        let limit = req.query.page == "only_count" ? 5 : 10;
+        let sort = req.query.page == "only_count" ? -1 : 1; //Sorting by { _id: -1 } ensures that the most recent documents appear first.
+        const data = await userSModel.find().sort({ _id: 1 });
+        console.log("data",data)
         let skip = (page - 1) * limit;
         const headersToken = req.headers['authorization'];
         if(headersToken){
@@ -57,10 +60,12 @@ const handleGetUsers = async(req,res) => {
             let passedData;
             let allUsersCount;
             let totaPages;
+            let inactiveUsers;
+            let usersAssingnedCount;
             switch(true){
                 case tokenResult.decode.role == "subadmin":
                     // console.log("subadmin found",newRegistration);
-                    newRegistration = await userSModel.find({handledSubAdmin: tokenResult.decode.id}).skip(skip).limit(limit);
+                    newRegistration = await userSModel.find({handledSubAdmin: tokenResult.decode.id}).sort({ _id: sort }).skip(skip).limit(limit);
                     const subadminWiseData = await newRegistration.filter(({handledSubAdmin}) => handledSubAdmin == tokenResult.decode.id);
                     passedData = await subadminWiseData.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => ({
                         id: _id,
@@ -74,11 +79,13 @@ const handleGetUsers = async(req,res) => {
                         authorizedDetails: adminModeldata.find(value => value._id.equals(handledSubAdmin))
                     }))
                     allUsersCount = await userSModel.countDocuments({handledSubAdmin: tokenResult.decode.id});
+                    inactiveUsers = await userSModel.find({handledSubAdmin: tokenResult.decode.id,status: "Inactive"}).countDocuments()
+                    let totalUsersCount = await userSModel.countDocuments({});
                     totaPages = Math.ceil(allUsersCount / limit)
-                    res.status(200).send({message:"Data fetched successfully", data: passedData,total_records: allUsersCount , total_page: totaPages , current_page:page})
+                    res.status(200).send({message:"Data fetched successfully", data: passedData,total_records: allUsersCount , total_page: totaPages , current_page:page, totalUsersCount: totalUsersCount,inactiveUsers: inactiveUsers,assignedUserCount: allUsersCount})
                     break;
                 default:
-                    newRegistration = await userSModel.find({}).skip(skip).limit(limit);
+                    newRegistration = await userSModel.find({}).sort({ _id: sort }).skip(skip).limit(limit);
                     passedData = await newRegistration.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => ({
                         id: _id,
                         firstname,
@@ -91,12 +98,14 @@ const handleGetUsers = async(req,res) => {
                         authorizedDetails: adminModeldata.find(value => value._id.equals(handledSubAdmin))
                         // console.log(data.firstname,data.role,data.status)
                     }))
+                    inactiveUsers = await userSModel.find({status: "Inactive"}).countDocuments()
+                    usersAssingnedCount = await userSModel.find({handledSubAdmin: tokenResult.decode.id}).countDocuments()
                     // await newRegistration.map((data) => console.log(data[0]));
                     // await newRegistration.map((data) => console.log("data",data.email,data["status"]));
                             // console.log(passedData)
                     allUsersCount = await userSModel.countDocuments();
                     totaPages = Math.ceil(allUsersCount / limit)
-                    res.status(200).send({message:"Data fetched successfully", data: passedData,total_records: allUsersCount , total_page: totaPages , current_page:page, skipDataCount: skip})
+                    res.status(200).send({message:"Data fetched successfully", data: passedData,total_records: allUsersCount , total_page: totaPages , current_page:page, skipDataCount: skip, totalUsersCount: allUsersCount,inactiveUsers: inactiveUsers, assignedUserCount: usersAssingnedCount})
                     //         break;
                     //     default:
                     //         res.status(401).send({message: "Token has expired"});

@@ -46,7 +46,7 @@ const handleGetUsers = async(req,res) => {
         let limit = req.query.page == "only_count" ? 5 : 10;
         let sort = req.query.page == "only_count" ? -1 : 1; //Sorting by { _id: -1 } ensures that the most recent documents appear first.
         const data = await userSModel.find().sort({ _id: 1 });
-        console.log("data",data)
+        // console.log("data",data)
         let skip = (page - 1) * limit;
         const headersToken = req.headers['authorization'];
         if(headersToken){

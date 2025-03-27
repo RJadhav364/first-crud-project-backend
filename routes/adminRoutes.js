@@ -1,5 +1,5 @@
 import express from "express"
-import { handleAuthorizedEdit, handleAuthorizedLoginSystem, handleAuthorizedparticular, handleCreateNewSuperior, handleDeleteSubadmin, handleListingAdminSubAdmin } from "../controllers/adminController.js"
+import { handleAuthorizedEdit, handleAuthorizedLoginSystem, handleAuthorizedparticular, handleCreateNewSuperior, handleDeleteSubadmin, handleEditProfile, handleListingAdminSubAdmin } from "../controllers/adminController.js"
 
 const adminController = express.Router();
 
@@ -9,5 +9,6 @@ adminController.post("/userlogin", handleAuthorizedLoginSystem);
 adminController.put("/admin-edit/:id", handleAuthorizedEdit);
 adminController.get("/admin-users/:id", handleAuthorizedparticular);
 adminController.delete("/admin-delete/:id", handleDeleteSubadmin);
+adminController.put("/profile-edit/:id", handleEditProfile);
 
 export default adminController

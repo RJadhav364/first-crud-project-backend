@@ -176,7 +176,7 @@ const handleAuthorizedEdit = async(req,res) => {
     try{
         const requestedObject = req.body;
         const headersToken = req.headers['authorization']
-        console.log(requestedObject)
+        // console.log(requestedObject)
         
         if(headersToken){
             const token  = headersToken.split(" ")[1];
@@ -209,23 +209,59 @@ const handleAuthorizedEdit = async(req,res) => {
 
 // handle id wise admin and subadmin data
 const handleAuthorizedparticular = async(req,res) => {
-    // console.log(req.params.id)
+    // console.log(req.query.page)
+    const requestedObject = req.body;
+    const headersToken = req.headers['authorization']
+    let page = req.query.page == "detailed" ? "detailed" : ""; 
     try{
+        const token  = headersToken.split(" ")[1];
+        const tokenResult = await verifyJWTToken(token);
         const adminId = req.params.id;
-        const fetchDataById = await adminSModel.findById({_id: adminId });
-        // console.log(fetchDataById)
-        const passObject = {
-            id: fetchDataById._id,
-            firstname: fetchDataById.firstname,
-            email: fetchDataById.email,
-            role: fetchDataById.role,
-            hasAllRights: fetchDataById.hasAllRights,
-            mnumber: fetchDataById.mnumber,
-        }
-        res.status(200).send({message:"data fetched" , data: passObject});
+        switch(true){
+            case tokenResult.decode.role == "admin" || tokenResult.decode.role == "subadmin":
+                const fetchDataById = await adminSModel.findById({_id: adminId });
+                const fetchSubadminCount = await adminSModel.countDocuments({isDeleted: false});
+                // console.log(await adminSModel.countDocuments())
+                const fetchAssignedUserCount = await userSModel.countDocuments({handledSubAdmin: adminId});
+                const fetcInActiveUserCount = await userSModel.find({handledSubAdmin: adminId}).countDocuments({status: "Inactive"});
+                const totalUserCount = await userSModel.countDocuments();
+                // const userDataCount = fetchUserData.countDocuments();
+                // console.log(fetchUserData)
+                const passObject = {
+                    id: fetchDataById._id,
+                    firstname: fetchDataById.firstname,
+                    email: fetchDataById.email,
+                    role: fetchDataById.role,
+                    hasAllRights: fetchDataById.hasAllRights,
+                    mnumber: fetchDataById.mnumber,
+                }
+                res.status(200).send({message:"data fetched" , data: passObject, countUserData: page == "detailed" ? fetchAssignedUserCount : 0, inActiveUserCount: page == "detailed" ? fetcInActiveUserCount : 0, totalSubAdminCount: page == "detailed" ? fetchSubadminCount : 0, totalUserCount: page == "detailed" ? totalUserCount : 0});
+                break;
+            default:
+                const fetchUserById = await userSModel.findById({_id: adminId });
+                const handleAdminDetails = await adminSModel.findById({_id: fetchUserById.handledSubAdmin})
+                // console.log(handleAdminDetails);
+                const passUserObject = {
+                    id: fetchUserById._id,
+                    firstname: fetchUserById.firstname,
+                    lastname: fetchUserById.lastname,
+                    email: fetchUserById.email,
+                    role: fetchUserById.role,
+                    mnumber: fetchUserById.number,
+                    status: fetchUserById.status,
+                    AuthorizerName: handleAdminDetails.firstname
+                }
+                res.status(200).send({message:"data fetched" , data: passUserObject});
+        } 
     } catch(err){
         // console.log(err)
-        res.status(400).send("Something went wrong");
+        switch(true){
+            case err.name == "TokenExpiredError":
+                res.status(401).send({message: "Token has expired"})
+                break;
+            default:
+                res.status(9999).send({message: "An unexpected error occurred. Please try again later."})
+        }
     }
 }
 
@@ -266,4 +302,39 @@ const handleDeleteSubadmin = async(req,res) => {
     }
 }
 
-export {handleCreateNewSuperior , handleListingAdminSubAdmin, handleAuthorizedLoginSystem, handleAuthorizedEdit , handleAuthorizedparticular, handleDeleteSubadmin}
+// profile edit backend logic start
+const handleEditProfile = async(req,res) => {
+    try{
+        const requestedObject = req.body;
+        const headersToken = req.headers['authorization'];
+        if(headersToken){
+            const token  = headersToken.split(" ")[1];
+            // console.log(token);
+            const tokenResult = await verifyJWTToken(token);
+            // console.log("tokenResult",tokenResult);
+            // console.log("requestedObject",requestedObject);
+            switch(true){
+                case tokenResult.decode.role == "admin" || tokenResult.decode.role == "subadmin":
+                    const editedAuthorizeddata = await adminSModel.findOneAndUpdate({_id: req.params.id }, requestedObject);
+                    res.status(200).send({message: "Profile updated successfully"});
+                    break;
+                default:
+                    const editedUserdata = await userSModel.findOneAndUpdate({_id: req.params.id }, requestedObject);
+                    res.status(200).send({message: "Profile updated successfully"});
+            }
+        } else{
+            res.status(498).send({message: "Token not found"})
+        }
+    } catch(err){
+        switch(true){
+            case err.name == "TokenExpiredError":
+                res.status(401).send({message: "Token has expired"})
+                break;
+            default:
+                res.status(9999).send({message: "An unexpected error occurred. Please try again later."})
+        }
+    }
+}
+// profile edit backend logic end
+
+export {handleCreateNewSuperior , handleListingAdminSubAdmin, handleAuthorizedLoginSystem, handleAuthorizedEdit , handleAuthorizedparticular, handleDeleteSubadmin, handleEditProfile}

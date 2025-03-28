@@ -200,6 +200,9 @@ const handleAuthorizedEdit = async(req,res) => {
                 // console.log("err",err.errorResponse.errmsg);
                 res.status(409).send({message: "Email ID already exist"})
                 break;
+            case err.name == "TokenExpiredError":
+                res.status(401).send({message: "Token has expired"})
+                break;
             default:
                 res.send({message: "Something went wrong"})
             

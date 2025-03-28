@@ -168,7 +168,7 @@ const handleUpdateUser = async(req,res) => {
     try{
         const requestedObject = req.body;
         const headersToken = req.headers['authorization']
-        // console.log(requestedObject.body)
+        // console.log(requestedObject)
         if(headersToken){
             const token  = headersToken.split(" ")[1];
             // console.log(token);
@@ -208,7 +208,7 @@ const handleDeleteUser = async(req,res) => {
             // console.log(token);
             const tokenResult = await verifyJWTToken(token);
             // console.log("tokenResult",tokenResult);
-            if(tokenResult.decode.role == "admin"){
+            if(tokenResult.decode.role == "admin" || (tokenResult.decode.role == "subadmin" && requestedObject.hasAllRights == "Yes")){
                 // console.log("inside if");
                 const deleteAuthorizedId = await userSModel.findOneAndDelete({_id: req.params.id });
                 // console.log(await adminSModel.findById({_id: req.params.id }))

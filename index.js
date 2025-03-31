@@ -4,6 +4,9 @@ import { handleCreateNewSuperior, handleListingAdminSubAdmin } from "./controlle
 import adminController from "./routes/adminRoutes.js";
 import cors from "cors"
 import userController from "./routes/userRoutes.js";
+// import "./config/dotenv.js"
+// console.log(process.env.MY_GMAIL);
+// console.log(process.env.MY_PASSWORD);
 const app = express();
 const PORT = 9000;
 app.use(cors(corsOptions));

@@ -6,6 +6,10 @@ import adminSModel from "../models/adminModel.js";
 import userSModel from "../models/userModel.js";
 import jwt from "jsonwebtoken"
 import nodemailer from "nodemailer"
+import "../config/dotenv.js"
+
+// console.log("Your Gmail:", process.env.MY_GMAIL);
+// console.log("Your Password:", process.env.MY_PASSWORD);
 
 
 const handleCreateNewSuperior = async(req,res) => {
@@ -358,12 +362,20 @@ const handleSendPasswordResetLink = async(req,res) => {
                     expiresIn: "5m"
                 });
                 const resetLink = `${link}/${findInAdmin._id}/${token}`;
-                console.log(process.env)
+                // console.log(process.env.MY_PASSWORD)
                 var transporter = nodemailer.createTransport({
                     service: 'gmail',
+                    port: 465,
+                    secure: true,
+                    logger: true,
+                    debug: true,
+                    securreConnection: false,
                     auth: {
-                      user: process.env.my_gmail,
-                      pass: process.env.my_password
+                      user: process.env.MY_PASSWORD,
+                      pass: process.env.MY_GMAIL
+                    },
+                    tls: {
+                        rejectUnauthorized: true
                     }
                   });
                   
@@ -376,7 +388,7 @@ const handleSendPasswordResetLink = async(req,res) => {
                   
                   transporter.sendMail(mailOptions, function(error, info){
                     if (error) {
-                        console.log(transporter)
+                        // console.log(transporter)
                       console.log(error);
                     } else {
                       console.log('Email sent: ' + info.response);

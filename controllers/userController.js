@@ -230,4 +230,15 @@ const handleDeleteUser = async(req,res) => {
     }
 }
 
-export {handleCreateNewUser,handleGetUsers,handleGetParticularUsers,handleUpdateUser,handleDeleteUser}
+const handleSendPasswordResetLink = (req,res) => {
+    try {
+        console.log(req.body.email)
+        // switch(true){
+
+        // }
+    } catch (error) {
+        
+    }
+}
+
+export {handleCreateNewUser,handleGetUsers,handleGetParticularUsers,handleUpdateUser,handleDeleteUser,handleSendPasswordResetLink}

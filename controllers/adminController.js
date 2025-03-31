@@ -1,8 +1,11 @@
+import { jwtKey , link } from "../config/common.js";
 import compareHashPassword from "../middleware/passwordCompare.js";
 import { convertPasswordToHash } from "../middleware/passwordHashing.js";
 import verifyJWTToken from "../middleware/verifyToken.js";
 import adminSModel from "../models/adminModel.js";
 import userSModel from "../models/userModel.js";
+import jwt from "jsonwebtoken"
+import nodemailer from "nodemailer"
 
 
 const handleCreateNewSuperior = async(req,res) => {
@@ -97,7 +100,7 @@ const handleAuthorizedLoginSystem = async(req,res) => {
         // console.log("credentialsGot",req.body)
         const findCredentialsDB = await adminSModel.findOne({email: credentialsGot.email});
         const findCredentialsUserDB = await userSModel.findOne({email: credentialsGot.email});
-        console.log("findCredentialsDB",findCredentialsDB)
+        // console.log("findCredentialsDB",findCredentialsDB)
         switch(true){
             case (findCredentialsDB == null && findCredentialsUserDB == null) || (findCredentialsDB && findCredentialsDB.isDeleted == true):
                 res.status(404).send({message: "User not found"});
@@ -340,4 +343,56 @@ const handleEditProfile = async(req,res) => {
 }
 // profile edit backend logic end
 
-export {handleCreateNewSuperior , handleListingAdminSubAdmin, handleAuthorizedLoginSystem, handleAuthorizedEdit , handleAuthorizedparticular, handleDeleteSubadmin, handleEditProfile}
+const handleSendPasswordResetLink = async(req,res) => {
+    try {
+        // console.log(req.body.email)
+        const findInAdmin = await adminSModel.findOne({email: req.body.email});
+        const findInUser = await userSModel.findOne({email: req.body.email});
+        console.log(findInAdmin,findInUser)
+        switch(true){
+            case !findInAdmin && !findInUser:
+                res.status(404).send({message:"User Not Found"});
+                break;
+            case findInAdmin != null:
+                const token = jwt.sign({email:findInAdmin.email, id: findInAdmin._id}, jwtKey, {
+                    expiresIn: "5m"
+                });
+                const resetLink = `${link}/${findInAdmin._id}/${token}`;
+                console.log(process.env)
+                var transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                      user: process.env.my_gmail,
+                      pass: process.env.my_password
+                    }
+                  });
+                  
+                  var mailOptions = {
+                    from: 'youremail@gmail.com',
+                    to: findInAdmin.email,
+                    subject: 'Sending Email using Node.js',
+                    text: resetLink
+                  };
+                  
+                  transporter.sendMail(mailOptions, function(error, info){
+                    if (error) {
+                        console.log(transporter)
+                      console.log(error);
+                    } else {
+                      console.log('Email sent: ' + info.response);
+                    }
+                  });
+                res.status(200).send({message:"User Found in Admin"});
+                break;
+            case findInUser != null:
+                res.status(200).send({message:"User Found in Users"});
+                break;
+            default:
+                res.send({message: "Something went wrong"})
+        }
+    } catch (error) {
+        
+    }
+}
+
+export {handleCreateNewSuperior , handleListingAdminSubAdmin, handleAuthorizedLoginSystem, handleAuthorizedEdit , handleAuthorizedparticular, handleDeleteSubadmin, handleEditProfile,handleSendPasswordResetLink}

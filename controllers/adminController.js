@@ -1,3 +1,4 @@
+import "../config/dotenv.js"
 import { jwtKey , link } from "../config/common.js";
 import compareHashPassword from "../middleware/passwordCompare.js";
 import { convertPasswordToHash } from "../middleware/passwordHashing.js";
@@ -6,10 +7,11 @@ import adminSModel from "../models/adminModel.js";
 import userSModel from "../models/userModel.js";
 import jwt from "jsonwebtoken"
 import nodemailer from "nodemailer"
-import "../config/dotenv.js"
+import generatePasswordLink from "../middleware/passwordResetLink.js";
+import updateOldPassWithNew from "../middleware/resetOldPassword.js";
 
-// console.log("Your Gmail:", process.env.MY_GMAIL);
-// console.log("Your Password:", process.env.MY_PASSWORD);
+console.log("Your Gmail:", process.env.MY_GMAIL);
+console.log("Your Password:", process.env.MY_PASSWORD);
 
 
 const handleCreateNewSuperior = async(req,res) => {
@@ -352,59 +354,91 @@ const handleSendPasswordResetLink = async(req,res) => {
         // console.log(req.body.email)
         const findInAdmin = await adminSModel.findOne({email: req.body.email});
         const findInUser = await userSModel.findOne({email: req.body.email});
-        console.log(findInAdmin,findInUser)
+        // console.log(findInAdmin,findInUser)
         switch(true){
-            case !findInAdmin && !findInUser:
+            case (!findInAdmin && !findInUser) || findInAdmin?.isDeleted == true:
                 res.status(404).send({message:"User Not Found"});
                 break;
             case findInAdmin != null:
-                const token = jwt.sign({email:findInAdmin.email, id: findInAdmin._id}, jwtKey, {
-                    expiresIn: "5m"
-                });
-                const resetLink = `${link}/${findInAdmin._id}/${token}`;
-                // console.log(process.env.MY_PASSWORD)
-                var transporter = nodemailer.createTransport({
-                    service: 'gmail',
-                    port: 465,
-                    secure: true,
-                    logger: true,
-                    debug: true,
-                    securreConnection: false,
-                    auth: {
-                      user: process.env.MY_PASSWORD,
-                      pass: process.env.MY_GMAIL
-                    },
-                    tls: {
-                        rejectUnauthorized: true
-                    }
-                  });
+                generatePasswordLink(findInAdmin.email,findInAdmin._id,findInAdmin.role)
+                // const token = jwt.sign({email:findInAdmin.email, id: findInAdmin._id}, jwtKey, {
+                //     expiresIn: "5m"
+                // });
+                // const resetLink = `${link}/${findInAdmin._id}/${token}`;
+                // // console.log(process.env.MY_PASSWORD)
+                // var transporter = nodemailer.createTransport({
+                //     service: 'gmail',
+                //     port: 587,
+                //     secure: false,
+                //     auth: {
+                //         user: process.env.MY_GMAIL,
+                //         pass: process.env.MY_PASSWORD
+                //       },
+                //     tls: {
+                //         rejectUnauthorized: true
+                //     },
+                //     logger: false,  // Enable logging to see the underlying network process
+                //     debug: false
+                // });
                   
-                  var mailOptions = {
-                    from: 'youremail@gmail.com',
-                    to: findInAdmin.email,
-                    subject: 'Sending Email using Node.js',
-                    text: resetLink
-                  };
+                //   var mailOptions = {
+                //     from: process.env.MY_GMAIL,
+                //     to: findInAdmin.email,
+                //     subject: 'Password Reset Request',
+                //     text: `Click on this link to reset your password ${resetLink}`
+                //   };
                   
-                  transporter.sendMail(mailOptions, function(error, info){
-                    if (error) {
-                        // console.log(transporter)
-                      console.log(error);
-                    } else {
-                      console.log('Email sent: ' + info.response);
-                    }
-                  });
+                //   transporter.sendMail(mailOptions, function(error, info){
+                //     // console.log("mailOptions",mailOptions)
+                //     if (error) {
+                //         // console.log(transporter)
+                //       console.log("error",error);
+                //     } else {
+                //       console.log('Email sent: ' + info.response);
+                //     }
+                //   });
                 res.status(200).send({message:"User Found in Admin"});
                 break;
             case findInUser != null:
+                generatePasswordLink(findInUser.email,findInUser._id,findInUser.role)
                 res.status(200).send({message:"User Found in Users"});
                 break;
             default:
                 res.send({message: "Something went wrong"})
         }
     } catch (error) {
-        
+        // console.log(error)
+        res.status(400).send({message: "An unexpected error occurred. Please try again later."})
     }
 }
 
-export {handleCreateNewSuperior , handleListingAdminSubAdmin, handleAuthorizedLoginSystem, handleAuthorizedEdit , handleAuthorizedparticular, handleDeleteSubadmin, handleEditProfile,handleSendPasswordResetLink}
+const resetPassword = async(req,res) => {
+    try {
+        // const {body} = req.body;
+        // console.log(req.body)
+        const headersToken = req.headers['authorization'];
+        if(headersToken){
+            const token  = headersToken.split(" ")[1];
+            const tokenResult = await verifyJWTToken(token);
+            // const newPasswordConversion = await convertPasswordToHash(req.body.password);
+            // const updateOldPassword = await adminSModel.findByIdAndUpdate({_id: tokenResult.decode.id}, {password: newPasswordConversion});
+            const storeResult =await updateOldPassWithNew(req.body.password,tokenResult.decode.id,tokenResult.decode.role)
+            // console.log("updateOldPassWithNew",storeResult)
+            res.status(200).send({message: `Password reset successfully for ${storeResult}` });
+            // console.log("updateOldPassword",updateOldPassword)
+        } else{
+            res.status(498).send({message: "Token not found"})
+        }
+    } catch (error) {
+        // console.log(error)
+        switch(true){
+            case error.name == "TokenExpiredError":
+                res.status(401).send({message: "Token has expired"})
+                break;
+            default:
+                res.status(403).send({message: "An unexpected error occurred. Please try again later."})
+        }
+    }
+}
+
+export {handleCreateNewSuperior , handleListingAdminSubAdmin, handleAuthorizedLoginSystem, handleAuthorizedEdit , handleAuthorizedparticular, handleDeleteSubadmin, handleEditProfile,handleSendPasswordResetLink, resetPassword}

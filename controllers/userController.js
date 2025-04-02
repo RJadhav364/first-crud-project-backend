@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { convertPasswordToHash } from "../middleware/passwordHashing.js";
 import verifyJWTToken from "../middleware/verifyToken.js";
 import adminSModel from "../models/adminModel.js";
@@ -42,6 +43,7 @@ const handleCreateNewUser = async(req,res) => {
 
 const handleGetUsers = async(req,res) => {
     try{
+        // console.log(req.query)
         let page =  req.query.page == "only_count" ? "only_count" : Number(req.query.page) || 1;
         let limit = req.query.page == "only_count" ? 5 : 10;
         let sort = req.query.page == "only_count" ? -1 : 1; //Sorting by { _id: -1 } ensures that the most recent documents appear first.
@@ -62,10 +64,19 @@ const handleGetUsers = async(req,res) => {
             let totaPages;
             let inactiveUsers;
             let usersAssingnedCount;
+            const filter = {};
+
+            if (req.query.authorname) {
+                filter.firstname = { $regex: req.query.authorname, $options: "i" }; // Case-insensitive search
+            }
+              
+            if (req.query.id) {
+                filter["handledSubAdmin"] = req.query.id; // Assuming ID is an exact match
+            }
             switch(true){
                 case tokenResult.decode.role == "subadmin":
-                    // console.log("subadmin found",newRegistration);
-                    newRegistration = await userSModel.find({handledSubAdmin: tokenResult.decode.id}).sort({ _id: sort }).skip(skip).limit(limit);
+                    console.log("subadmin found",await userSModel.find(filter));
+                    newRegistration = await userSModel.find({handledSubAdmin: tokenResult.decode.id, ...filter}).sort({ _id: sort }).skip(skip).limit(limit);
                     const subadminWiseData = await newRegistration.filter(({handledSubAdmin}) => handledSubAdmin == tokenResult.decode.id);
                     passedData = await subadminWiseData.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => ({
                         id: _id,
@@ -78,14 +89,16 @@ const handleGetUsers = async(req,res) => {
                         status,
                         authorizedDetails: adminModeldata.find(value => value._id.equals(handledSubAdmin))
                     }))
-                    allUsersCount = await userSModel.countDocuments({handledSubAdmin: tokenResult.decode.id});
-                    inactiveUsers = await userSModel.find({handledSubAdmin: tokenResult.decode.id,status: "Inactive"}).countDocuments()
-                    let totalUsersCount = await userSModel.countDocuments({});
+                    allUsersCount = await userSModel.countDocuments({handledSubAdmin: tokenResult.decode.id, ...filter});
+                    inactiveUsers = await userSModel.find({handledSubAdmin: tokenResult.decode.id,status: "Inactive", ...filter}).countDocuments()
+                    let totalUsersCount = await userSModel.countDocuments({handledSubAdmin: tokenResult.decode.id, ...filter});
                     totaPages = Math.ceil(allUsersCount / limit)
                     res.status(200).send({message:"Data fetched successfully", data: passedData,total_records: allUsersCount , total_page: totaPages , current_page:page, totalUsersCount: totalUsersCount,inactiveUsers: inactiveUsers,assignedUserCount: allUsersCount})
                     break;
                 default:
-                    newRegistration = await userSModel.find({}).sort({ _id: sort }).skip(skip).limit(limit);
+                    // console.log(await userSModel.find(req.query))
+                    newRegistration = await userSModel.find(filter).sort({ _id: sort }).skip(skip).limit(limit);
+                    // console.log(newRegistration)
                     passedData = await newRegistration.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => ({
                         id: _id,
                         firstname,
@@ -96,16 +109,16 @@ const handleGetUsers = async(req,res) => {
                         handledSubAdmin,
                         status,
                         authorizedDetails: adminModeldata.find(value => value._id.equals(handledSubAdmin))
-                        // console.log(data.firstname,data.role,data.status)
                     }))
-                    inactiveUsers = await userSModel.find({status: "Inactive"}).countDocuments()
+                    
+                    inactiveUsers = await userSModel.find({status: "Inactive"}).countDocuments(filter)
                     usersAssingnedCount = await userSModel.find({handledSubAdmin: tokenResult.decode.id}).countDocuments()
                     // await newRegistration.map((data) => console.log(data[0]));
                     // await newRegistration.map((data) => console.log("data",data.email,data["status"]));
                             // console.log(passedData)
-                    allUsersCount = await userSModel.countDocuments();
+                    allUsersCount = await userSModel.countDocuments(filter);
                     totaPages = Math.ceil(allUsersCount / limit)
-                    res.status(200).send({message:"Data fetched successfully", data: passedData,total_records: allUsersCount , total_page: totaPages , current_page:page, skipDataCount: skip, totalUsersCount: allUsersCount,inactiveUsers: inactiveUsers, assignedUserCount: usersAssingnedCount})
+                    res.status(200).send({message:"Data fetched successfully", data: passedData,total_records: allUsersCount , total_page: totaPages , current_page:page,skipDataCount: skip, totalUsersCount: allUsersCount,inactiveUsers: inactiveUsers, assignedUserCount: usersAssingnedCount})
                     //         break;
                     //     default:
                     //         res.status(401).send({message: "Token has expired"});

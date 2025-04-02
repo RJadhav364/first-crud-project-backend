@@ -64,7 +64,8 @@ const handleListingAdminSubAdmin = async(req,res) => {
         let page = req.query.page == "no_pagination" ? "no_pagination" : req.query.page == "only_count" ? "only_count" : Number(req.query.page) || 1;
         let limit = 10;
         let skip = (page - 1) * limit;
-        const headersToken = req.headers['authorization']
+        const headersToken = req.headers['authorization'];
+        let allAuthorizedUsers;
         // console.log(headersToken)
         if(headersToken){
             const token  = headersToken.split(" ")[1];
@@ -72,8 +73,17 @@ const handleListingAdminSubAdmin = async(req,res) => {
             // console.log("tokenResult",tokenResult);
             // switch(true){
             //     case tokenResult.result == "false":
-                    const allAuthorizedUsers = page == "no_pagination" ? await adminSModel.find({isDeleted: false}) : await adminSModel.find({isDeleted: false}).skip(skip).limit(limit);
+                    allAuthorizedUsers = page == "no_pagination" ? await adminSModel.find({isDeleted: false}) : await adminSModel.find({isDeleted: false}).skip(skip).limit(limit);
                     // console.log("allAuthorizedUsers",await adminSModel.find({ isDeleted: !true}))
+                    allAuthorizedUsers = allAuthorizedUsers.map(({_id,email,role,firstname,hasAllRights,mnumber,isDeleted}) => ({
+                        _id: _id,
+                        email: email,
+                        role: role,
+                        firstname: firstname,
+                        hasAllRights: hasAllRights,
+                        mnumber: mnumber,
+                        isDeleted: isDeleted
+                    }))
                     let allAuthorizedUsersCount = await adminSModel.countDocuments({isDeleted: false});
                     let totaPages = Math.ceil(allAuthorizedUsersCount / limit)
                     res.status(200).send({message: "Data Fetch successfully", data: page == "only_count" ? [] : allAuthorizedUsers,total_records: allAuthorizedUsersCount , total_page: totaPages , current_page:page,skipDataCount: skip})

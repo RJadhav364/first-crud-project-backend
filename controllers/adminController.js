@@ -66,6 +66,14 @@ const handleListingAdminSubAdmin = async(req,res) => {
         let skip = (page - 1) * limit;
         const headersToken = req.headers['authorization'];
         let allAuthorizedUsers;
+        const filter = {};
+
+        if (req.query.firstname) {
+            filter.firstname = { $regex: req.query.firstname, $options: "i" }; // Case-insensitive search
+        }
+        if (req.query.hasAllRights) {
+            filter.hasAllRights = { $regex: req.query.hasAllRights, $options: "i" }; // Case-insensitive search
+        }
         // console.log(headersToken)
         if(headersToken){
             const token  = headersToken.split(" ")[1];
@@ -73,7 +81,7 @@ const handleListingAdminSubAdmin = async(req,res) => {
             // console.log("tokenResult",tokenResult);
             // switch(true){
             //     case tokenResult.result == "false":
-                    allAuthorizedUsers = page == "no_pagination" ? await adminSModel.find({isDeleted: false}) : await adminSModel.find({isDeleted: false}).skip(skip).limit(limit);
+                    allAuthorizedUsers = page == "no_pagination" ? await adminSModel.find({isDeleted: false, ...filter}) : await adminSModel.find({isDeleted: false,...filter}).skip(skip).limit(limit);
                     // console.log("allAuthorizedUsers",await adminSModel.find({ isDeleted: !true}))
                     allAuthorizedUsers = allAuthorizedUsers.map(({_id,email,role,firstname,hasAllRights,mnumber,isDeleted}) => ({
                         _id: _id,
@@ -84,7 +92,7 @@ const handleListingAdminSubAdmin = async(req,res) => {
                         mnumber: mnumber,
                         isDeleted: isDeleted
                     }))
-                    let allAuthorizedUsersCount = await adminSModel.countDocuments({isDeleted: false});
+                    let allAuthorizedUsersCount = await adminSModel.countDocuments({isDeleted: false,...filter});
                     let totaPages = Math.ceil(allAuthorizedUsersCount / limit)
                     res.status(200).send({message: "Data Fetch successfully", data: page == "only_count" ? [] : allAuthorizedUsers,total_records: allAuthorizedUsersCount , total_page: totaPages , current_page:page,skipDataCount: skip})
             //         break;

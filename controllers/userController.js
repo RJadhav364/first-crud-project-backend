@@ -73,9 +73,13 @@ const handleGetUsers = async(req,res) => {
             if (req.query.id) {
                 filter["handledSubAdmin"] = req.query.id; // Assuming ID is an exact match
             }
+
+            if (req.query.status) {
+                filter.status = req.query.status; // Assuming ID is an exact match
+            }
             switch(true){
                 case tokenResult.decode.role == "subadmin":
-                    console.log("subadmin found",await userSModel.find(filter));
+                    // console.log("subadmin found",await userSModel.find(filter));
                     newRegistration = await userSModel.find({handledSubAdmin: tokenResult.decode.id, ...filter}).sort({ _id: sort }).skip(skip).limit(limit);
                     const subadminWiseData = await newRegistration.filter(({handledSubAdmin}) => handledSubAdmin == tokenResult.decode.id);
                     passedData = await subadminWiseData.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => ({

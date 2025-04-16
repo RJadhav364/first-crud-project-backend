@@ -9,11 +9,6 @@ import jwt from "jsonwebtoken"
 import nodemailer from "nodemailer"
 import generatePasswordLink from "../middleware/passwordResetLink.js";
 import updateOldPassWithNew from "../middleware/resetOldPassword.js";
-
-console.log("Your Gmail:", process.env.MY_GMAIL);
-console.log("Your Password:", process.env.MY_PASSWORD);
-
-
 const handleCreateNewSuperior = async(req,res) => {
     try{
         const requestedValues = req.body;
@@ -41,14 +36,13 @@ const handleCreateNewSuperior = async(req,res) => {
         }
         // console.log("requestedValues",values);
     } catch(err){
-        // console.log("err",err.errorResponse.errmsg);
-        // const errorLabels = err.errorResponse[Symbol('errorLabels')];
-        // console.log(errorLabels)
-        // console.log("err",err.errorResponse && err.errorResponse.keyPattern.email);
         switch(true){
             case err.errorResponse && err.errorResponse.keyPattern.email == 1:
                 // console.log("err",err.errorResponse.errmsg);
                 res.status(409).send({message: "Email ID already exist"})
+                break;
+            case err.name == "TokenExpiredError":
+                res.status(401).send({message: "Token has expired"})
                 break;
             default:
                 res.send({message: "Something went wrong"})
@@ -193,7 +187,8 @@ const handleAuthorizedLoginSystem = async(req,res) => {
         }
     }
     catch(err){
-        console.log(err)
+        console.log(err);
+        res.status(400).send({message: "An unexpected error occurred. Please try again later."})
     }
 }
 

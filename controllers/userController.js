@@ -13,14 +13,19 @@ const handleCreateNewUser = async(req,res) => {
                 const token  = headersToken.split(" ")[1];
                 // console.log(token);
                 const tokenResult = await verifyJWTToken(token);
-                // console.log("tokenResult",tokenResult);
-                    // console.log("inside if");
-                    const {password, ...values} = req.body;
-                    const passwordConversion = await convertPasswordToHash(password);
-                    const mergeObject = {password: passwordConversion, ...values};
-                    // console.log("mergeObject",mergeObject);
-                    const newRegistration = await userSModel.create(mergeObject)
-                    res.status(200).send({message: "New user created"})
+                console.log("tokenResult",tokenResult);
+                switch(true){
+                    case tokenResult.decode.role != "User":
+                        const {password, ...values} = req.body;
+                        const passwordConversion = await convertPasswordToHash(password);
+                        const mergeObject = {password: passwordConversion, ...values};
+                        // console.log("mergeObject",mergeObject);
+                        // const newRegistration = await userSModel.create(mergeObject)
+                        res.status(200).send({message: "New user created"})
+                        break;
+                    default:
+                        res.status(200).send({message: "Not authorized to create new user!"})
+                }
             } else{
                 res.status(498).send({message: "Token not found"})
             }
@@ -33,6 +38,9 @@ const handleCreateNewUser = async(req,res) => {
             case err.errorResponse && err.errorResponse.keyPattern.email == 1:
                 // console.log("err",err.errorResponse.errmsg);
                 res.status(409).send({message: "Email ID already exist"})
+                break;
+            case err.name == "TokenExpiredError":
+                res.status(401).send({message: "Token has expired"})
                 break;
             default:
                 res.send({message: "Something went wrong"})

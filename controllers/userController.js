@@ -13,14 +13,14 @@ const handleCreateNewUser = async(req,res) => {
                 const token  = headersToken.split(" ")[1];
                 // console.log(token);
                 const tokenResult = await verifyJWTToken(token);
-                console.log("tokenResult",tokenResult);
+                // console.log("tokenResult",tokenResult);
                 switch(true){
                     case tokenResult.decode.role != "User":
                         const {password, ...values} = req.body;
                         const passwordConversion = await convertPasswordToHash(password);
                         const mergeObject = {password: passwordConversion, ...values};
                         // console.log("mergeObject",mergeObject);
-                        // const newRegistration = await userSModel.create(mergeObject)
+                        const newRegistration = await userSModel.create(mergeObject)
                         res.status(200).send({message: "New user created"})
                         break;
                     default:
@@ -111,17 +111,40 @@ const handleGetUsers = async(req,res) => {
                     // console.log(await userSModel.find(req.query))
                     newRegistration = await userSModel.find(filter).sort({ _id: sort }).skip(skip).limit(limit);
                     // console.log(newRegistration)
-                    passedData = await newRegistration.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => ({
-                        id: _id,
-                        firstname,
-                        lastname,
-                        email,
-                        role,
-                        number,
-                        handledSubAdmin,
-                        status,
-                        authorizedDetails: adminModeldata.find(value => value._id.equals(handledSubAdmin))
-                    }))
+                    passedData = await newRegistration.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => {
+                        adminModeldata = adminModeldata.find(value => value._id.equals(handledSubAdmin)); 
+                        return {
+                            id: _id,
+                            firstname,
+                            lastname,
+                            email,
+                            role,
+                            number,
+                            handledSubAdmin,
+                            status,
+                            authorizedDetails: {
+                                id: adminModeldata._id,
+                                email: adminModeldata.email,
+                                role: adminModeldata.role,
+                                firstname: adminModeldata.firstname,
+                                hasAllRights: adminModeldata.hasAllRights,
+                                mnumber: adminModeldata.mnumber,
+                                isDeleted: adminModeldata.isDeleted
+                            }
+                        }
+                    }
+                    )
+                //     ({
+                //     id: _id,
+                //     firstname,
+                //     lastname,
+                //     email,
+                //     role,
+                //     number,
+                //     handledSubAdmin,
+                //     status,
+                //     authorizedDetails: adminModeldata.find(value => value._id.equals(handledSubAdmin))
+                // })
                     
                     inactiveUsers = await userSModel.find({status: "Inactive"}).countDocuments(filter)
                     usersAssingnedCount = await userSModel.find({handledSubAdmin: tokenResult.decode.id}).countDocuments()
@@ -140,7 +163,7 @@ const handleGetUsers = async(req,res) => {
             res.status(498).send({message: "Token not found"})
         }
     } catch(err){
-        console.log(err)
+        // console.log(err)
         switch(true){
             case err.name == "TokenExpiredError":
                 res.status(401).send({message: "Token has expired"})
@@ -185,7 +208,13 @@ const handleGetParticularUsers = async(req,res) => {
         }
     } catch(err){
         // console.log(err)
-        res.status(400).send("Something went wrong");
+        switch(true){
+            case err.name == "TokenExpiredError":
+                res.status(401).send({message: "Token has expired"})
+                break;
+            default:
+                res.send({message: "An unexpected error occurred. Please try again later."})
+        }
     }
 }
 
@@ -215,6 +244,9 @@ const handleUpdateUser = async(req,res) => {
             case err.errorResponse && err.errorResponse.keyPattern.email == 1:
                 // console.log("err",err.errorResponse.errmsg);
                 res.status(409).send({message: "Email ID already exist"})
+                break;
+            case err.name == "TokenExpiredError":
+                res.status(401).send({message: "Token has expired"})
                 break;
             default:
                 res.send({message: "Something went wrong"})

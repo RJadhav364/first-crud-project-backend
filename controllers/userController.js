@@ -33,7 +33,7 @@ const handleCreateNewUser = async(req,res) => {
             res.status(400).send({message: "You are already an authorized person. You cannot create a user account."})
         }
     }catch(err){
-        console.log(err)
+        // console.log(err)
         switch(true){
             case err.errorResponse && err.errorResponse.keyPattern.email == 1:
                 // console.log("err",err.errorResponse.errmsg);

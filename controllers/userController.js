@@ -67,6 +67,7 @@ const handleGetUsers = async(req,res) => {
             let adminModeldata = await adminSModel.find({});
             // let allAuthorizedUsersCoun2t = await userSModel.countDocuments();
             // console.log(adminModeldata);
+            let adminParticularData;
             let passedData;
             let allUsersCount;
             let totaPages;
@@ -112,7 +113,7 @@ const handleGetUsers = async(req,res) => {
                     newRegistration = await userSModel.find(filter).sort({ _id: sort }).skip(skip).limit(limit);
                     // console.log(newRegistration)
                     passedData = await newRegistration.map(({_id,firstname,lastname,email,role,number,handledSubAdmin,status}) => {
-                        adminModeldata = adminModeldata.find(value => value._id.equals(handledSubAdmin)); 
+                        adminParticularData = adminModeldata.find(value => value._id.equals(handledSubAdmin)); 
                         return {
                             id: _id,
                             firstname,
@@ -123,13 +124,13 @@ const handleGetUsers = async(req,res) => {
                             handledSubAdmin,
                             status,
                             authorizedDetails: {
-                                id: adminModeldata._id,
-                                email: adminModeldata.email,
-                                role: adminModeldata.role,
-                                firstname: adminModeldata.firstname,
-                                hasAllRights: adminModeldata.hasAllRights,
-                                mnumber: adminModeldata.mnumber,
-                                isDeleted: adminModeldata.isDeleted
+                                id: adminParticularData._id,
+                                email: adminParticularData.email,
+                                role: adminParticularData.role,
+                                firstname: adminParticularData.firstname,
+                                hasAllRights: adminParticularData.hasAllRights,
+                                mnumber: adminParticularData.mnumber,
+                                isDeleted: adminParticularData.isDeleted
                             }
                         }
                     }
@@ -163,7 +164,7 @@ const handleGetUsers = async(req,res) => {
             res.status(498).send({message: "Token not found"})
         }
     } catch(err){
-        // console.log(err)
+        console.log(err)
         switch(true){
             case err.name == "TokenExpiredError":
                 res.status(401).send({message: "Token has expired"})
@@ -176,35 +177,52 @@ const handleGetUsers = async(req,res) => {
 
 const handleGetParticularUsers = async(req,res) => {
     try{
-        const userId = req.params.id;
-        const fetchDataById = await userSModel.findById({_id: userId });
-        // console.log(fetchDataById)
-        let passObject = {
-            id: fetchDataById._id,
-            firstname: fetchDataById.firstname,
-            lastname: fetchDataById.lastname,
-            email: fetchDataById.email,
-            role: fetchDataById.role,
-            handledSubAdmin: fetchDataById.handledSubAdmin,
-            number: fetchDataById.number,
-            status: fetchDataById.status
-        }
-        let adminDetails = await adminSModel.findById({_id: passObject.handledSubAdmin});
-        // console.log(adminDetails);
-        if(adminDetails != null){
-            adminDetails = {
-                id: adminDetails._id,
-                firstname: adminDetails.firstname,
-                email: adminDetails.email,
-                role: adminDetails.role,
-                hasAllRights: adminDetails.hasAllRights,
-                mnumber: adminDetails.mnumber,
-            }
-            passObject = {adminDetails, ...passObject}
-            res.status(200).send({message:"data fetched" , data: passObject});
-        } else{
-            passObject = {adminDetails, ...passObject}
-            res.status(200).send({message:"data fetched" , data: passObject});
+        const headersToken = req.headers['authorization']
+        if(headersToken){
+            const token  = headersToken.split(" ")[1];
+            const tokenResult = await verifyJWTToken(token);
+            console.log(tokenResult);
+            switch(true){
+                case tokenResult.decode.role != "User":
+                    if(req.query.rights == "Yes"){
+                        const userId = req.params.id;
+                        const fetchDataById = await userSModel.findById({_id: userId });
+                        // console.log(fetchDataById)
+                        let passObject = {
+                            id: fetchDataById._id,
+                            firstname: fetchDataById.firstname,
+                            lastname: fetchDataById.lastname,
+                            email: fetchDataById.email,
+                            role: fetchDataById.role,
+                            handledSubAdmin: fetchDataById.handledSubAdmin,
+                            number: fetchDataById.number,
+                            status: fetchDataById.status
+                        }
+                        let adminDetails = await adminSModel.findById({_id: passObject.handledSubAdmin});
+                        // console.log(adminDetails);
+                        if(adminDetails != null){
+                            adminDetails = {
+                                id: adminDetails._id,
+                                firstname: adminDetails.firstname,
+                                email: adminDetails.email,
+                                role: adminDetails.role,
+                                hasAllRights: adminDetails.hasAllRights,
+                                mnumber: adminDetails.mnumber,
+                            }
+                            passObject = {adminDetails, ...passObject}
+                            res.status(200).send({message:"data fetched" , data: passObject});
+                        } else{
+                            passObject = {adminDetails, ...passObject}
+                            res.status(200).send({message:"data fetched" , data: passObject});
+                        }
+                    } else{
+                        res.status(401).send({message: "Dont have rights to perform this action"})
+                    }
+                    break;
+                default:
+                    res.status(403).send({message: "You do not have permission to perform this action"})
+                    break;
+                }
         }
     } catch(err){
         // console.log(err)

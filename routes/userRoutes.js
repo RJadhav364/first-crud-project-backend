@@ -9,5 +9,6 @@ userController.get("/get-role-users/:id", handleGetParticularUsers);
 userController.put("/get-role-users/:id", handleUpdateUser);
 userController.delete("/get-role-users/:id", handleDeleteUser);
 userController.post("/password-link/:id", handleSendPasswordResetLink);
+userController.get("/role-users/:id", handleGetParticularUsers);
 
 export default userController

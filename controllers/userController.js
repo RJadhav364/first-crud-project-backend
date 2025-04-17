@@ -178,6 +178,9 @@ const handleGetUsers = async(req,res) => {
 const handleGetParticularUsers = async(req,res) => {
     try{
         const headersToken = req.headers['authorization']
+        let page = req.query.page == "detailed" ? "detailed" : "";
+        let fetchDataById;
+        let adminDetails;
         if(headersToken){
             const token  = headersToken.split(" ")[1];
             const tokenResult = await verifyJWTToken(token);
@@ -186,8 +189,8 @@ const handleGetParticularUsers = async(req,res) => {
             switch(true){
                 case tokenResult.decode.role != "User":
                     const userId = req.params.id;
-                    const fetchDataById = await userSModel.findById({_id: userId });
-                    let adminDetails = await adminSModel.findById({_id: req.query.rights});
+                    fetchDataById = await userSModel.findById({_id: userId });
+                    adminDetails = await adminSModel.findById({_id: req.query.rights});
                     // console.log(adminDetails)
                     if(adminDetails.hasAllRights == "Yes"){
                         // console.log(fetchDataById)
@@ -222,13 +225,37 @@ const handleGetParticularUsers = async(req,res) => {
                         res.status(401).send({message: "Dont have rights to perform this action"})
                     }
                     break;
+                case page == "detailed":
+                    fetchDataById = await userSModel.findById({_id: req.params.id });
+                    adminDetails = await adminSModel.findById({_id: fetchDataById.handledSubAdmin});
+                    // console.log(adminDetails)
+                    let passObject = {
+                        id: fetchDataById._id,
+                        firstname: fetchDataById.firstname,
+                        lastname: fetchDataById.lastname,
+                        email: fetchDataById.email,
+                        role: fetchDataById.role,
+                        handledSubAdmin: {
+                            id: adminDetails._id,
+                            firstname: adminDetails.firstname,
+                            email: adminDetails.email,
+                            role: adminDetails.role,
+                            hasAllRights: adminDetails.hasAllRights,
+                            mnumber: adminDetails.mnumber,
+                            isDeleted: adminDetails.isDeleted,
+                        },
+                        number: fetchDataById.number,
+                        status: fetchDataById.status
+                    }
+                    res.status(200).send({message:"data fetched sec", data: passObject});
+                    break;
                 default:
                     res.status(403).send({message: "You do not have permission to perform this action"})
                     break;
                 }
         }
     } catch(err){
-        // console.log(err)
+        console.log(err)
         switch(true){
             case err.name == "TokenExpiredError":
                 res.status(401).send({message: "Token has expired"})

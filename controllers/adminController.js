@@ -118,7 +118,7 @@ const handleAuthorizedLoginSystem = async(req,res) => {
         // console.log("credentialsGot",req.body)
         const findCredentialsDB = await adminSModel.findOne({email: credentialsGot.email});
         const findCredentialsUserDB = await userSModel.findOne({email: credentialsGot.email});
-        // console.log("findCredentialsDB",findCredentialsDB)
+        // console.log("findCredentialsDB",findCredentialsDB.password,credentialsGot.password)
         switch(true){
             case (findCredentialsDB == null && findCredentialsUserDB == null) || (findCredentialsDB && findCredentialsDB.isDeleted == true):
                 res.status(404).send({message: "User not found"});
@@ -285,7 +285,7 @@ const handleAuthorizedparticular = async(req,res) => {
                 res.status(401).send({message: "Token has expired"})
                 break;
             default:
-                res.status(9999).send({message: "An unexpected error occurred. Please try again later."})
+                res.status(403).send({message: "An unexpected error occurred. Please try again later."})
         }
     }
 }
@@ -322,7 +322,7 @@ const handleDeleteSubadmin = async(req,res) => {
                 res.status(401).send({message: "Token has expired"})
                 break;
             default:
-                res.status(9999).send({message: "An unexpected error occurred. Please try again later."})
+                res.status(403).send({message: "An unexpected error occurred. Please try again later."})
         }
     }
 }
@@ -356,7 +356,7 @@ const handleEditProfile = async(req,res) => {
                 res.status(401).send({message: "Token has expired"})
                 break;
             default:
-                res.status(9999).send({message: "An unexpected error occurred. Please try again later."})
+                res.status(403).send({message: "An unexpected error occurred. Please try again later."})
         }
     }
 }

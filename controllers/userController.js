@@ -181,12 +181,15 @@ const handleGetParticularUsers = async(req,res) => {
         if(headersToken){
             const token  = headersToken.split(" ")[1];
             const tokenResult = await verifyJWTToken(token);
-            console.log(tokenResult);
+            // console.log(await userSModel.findById({_id: req.params.id }));
+            // console.log(await adminSModel.findById({_id: passObject.handledSubAdmin}));
             switch(true){
                 case tokenResult.decode.role != "User":
-                    if(req.query.rights == "Yes"){
-                        const userId = req.params.id;
-                        const fetchDataById = await userSModel.findById({_id: userId });
+                    const userId = req.params.id;
+                    const fetchDataById = await userSModel.findById({_id: userId });
+                    let adminDetails = await adminSModel.findById({_id: req.query.rights});
+                    // console.log(adminDetails)
+                    if(adminDetails.hasAllRights == "Yes"){
                         // console.log(fetchDataById)
                         let passObject = {
                             id: fetchDataById._id,
@@ -198,9 +201,9 @@ const handleGetParticularUsers = async(req,res) => {
                             number: fetchDataById.number,
                             status: fetchDataById.status
                         }
-                        let adminDetails = await adminSModel.findById({_id: passObject.handledSubAdmin});
+                        // let adminDetails = await adminSModel.findById({_id: passObject.handledSubAdmin});
                         // console.log(adminDetails);
-                        if(adminDetails != null){
+                        // if(adminDetails != null){
                             adminDetails = {
                                 id: adminDetails._id,
                                 firstname: adminDetails.firstname,
@@ -211,10 +214,10 @@ const handleGetParticularUsers = async(req,res) => {
                             }
                             passObject = {adminDetails, ...passObject}
                             res.status(200).send({message:"data fetched" , data: passObject});
-                        } else{
-                            passObject = {adminDetails, ...passObject}
-                            res.status(200).send({message:"data fetched" , data: passObject});
-                        }
+                        // } else{
+                        //     passObject = {adminDetails, ...passObject}
+                        //     res.status(200).send({message:"data fetched" , data: passObject});
+                        // }
                     } else{
                         res.status(401).send({message: "Dont have rights to perform this action"})
                     }
@@ -246,7 +249,8 @@ const handleUpdateUser = async(req,res) => {
             // console.log(token);
             const tokenResult = await verifyJWTToken(token);
             // console.log("tokenResult",tokenResult);
-            if(tokenResult.decode.role == "admin" || (tokenResult.decode.role == "subadmin" && requestedObject.hasAllRights == "Yes")){
+            let adminDetails = await adminSModel.findById({_id: tokenResult.decode.id});
+            if(tokenResult.decode.role == "admin" || (tokenResult.decode.role == "subadmin" && adminDetails.hasAllRights == "Yes")){
                 // console.log("inside if");
                 const editedAuthorizeddata = await userSModel.findOneAndUpdate({_id: req.params.id }, requestedObject.body);
                 // console.log(await adminSModel.findById({_id: req.params.id }))
@@ -283,7 +287,8 @@ const handleDeleteUser = async(req,res) => {
             // console.log(token);
             const tokenResult = await verifyJWTToken(token);
             // console.log("tokenResult",tokenResult);
-            if(tokenResult.decode.role == "admin" || (tokenResult.decode.role == "subadmin" && requestedObject.hasAllRights == "Yes")){
+            let adminDetails = await adminSModel.findById({_id: tokenResult.decode.id});
+            if(tokenResult.decode.role == "admin" || (tokenResult.decode.role == "subadmin" && adminDetails.hasAllRights == "Yes")){
                 // console.log("inside if");
                 const deleteAuthorizedId = await userSModel.findOneAndDelete({_id: req.params.id });
                 // console.log(await adminSModel.findById({_id: req.params.id }))

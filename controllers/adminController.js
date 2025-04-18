@@ -1,5 +1,5 @@
 import "../config/dotenv.js"
-import { jwtKey , link } from "../config/common.js";
+// import { jwtKey , link } from "../config/common.js";
 import compareHashPassword from "../middleware/passwordCompare.js";
 import { convertPasswordToHash } from "../middleware/passwordHashing.js";
 import verifyJWTToken from "../middleware/verifyToken.js";

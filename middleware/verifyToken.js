@@ -1,4 +1,4 @@
-import { jwtKey } from "../config/common.js";
+// import { jwtKey } from "../config/common.js";
 import jwt from "jsonwebtoken"
 const verifyJWTToken = async(token) => {
     // const result = jwt.verify(token, jwtKey , async(err) => {

@@ -3,7 +3,7 @@
 import "../config/dotenv.js"
 import jwt from "jsonwebtoken"
 import nodemailer from "nodemailer"
-import { jwtKey, link } from "../config/common.js";
+// import { jwtKey, link } from "../config/common.js";
 
 const generatePasswordLink = (email,id,role) => {
     const token = jwt.sign({email:email, id: id, role: role}, process.env.JWTKEY, {

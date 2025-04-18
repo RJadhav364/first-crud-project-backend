@@ -46,7 +46,7 @@ userSchema.path('role')
     userSchema.methods.generateUserToken = async function (payload){
             try{
                 return jwt.sign(payload,
-                    jwtKey,{
+                    process.env.JWTKEY,{
                         expiresIn: "1d",
                     }
                 )

@@ -6,10 +6,10 @@ import nodemailer from "nodemailer"
 import { jwtKey, link } from "../config/common.js";
 
 const generatePasswordLink = (email,id,role) => {
-    const token = jwt.sign({email:email, id: id, role: role}, jwtKey, {
+    const token = jwt.sign({email:email, id: id, role: role}, process.env.JWTKEY, {
         expiresIn: "5m"
     });
-    const resetLink = `${link}/${id}/${token}`;
+    const resetLink = `${process.env.LINK}/${id}/${token}`;
     var transporter = nodemailer.createTransport({
         service: 'gmail',
         port: 587,

@@ -40,7 +40,7 @@ adminSchema.path('hasAllRights')
     adminSchema.methods.generateToken = async function (payload){
         try{
             return jwt.sign(payload,
-                "j&/g@N&cj2vTIqQ!^9aV5HQ<R>a.9>,Xl2YQX!O}z&eofhc1TnyZmvXw9.PS0",{
+                process.env.JWTKEY,{
                     expiresIn: "1d",
                 }
             )

@@ -5,8 +5,6 @@ import { convertPasswordToHash } from "../middleware/passwordHashing.js";
 import verifyJWTToken from "../middleware/verifyToken.js";
 import adminSModel from "../models/adminModel.js";
 import userSModel from "../models/userModel.js";
-import jwt from "jsonwebtoken"
-import nodemailer from "nodemailer"
 import generatePasswordLink from "../middleware/passwordResetLink.js";
 import updateOldPassWithNew from "../middleware/resetOldPassword.js";
 import "../config/dotenv.js"

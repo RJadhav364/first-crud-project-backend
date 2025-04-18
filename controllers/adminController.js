@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken"
 import nodemailer from "nodemailer"
 import generatePasswordLink from "../middleware/passwordResetLink.js";
 import updateOldPassWithNew from "../middleware/resetOldPassword.js";
+import "../config/dotenv.js"
 const handleCreateNewSuperior = async(req,res) => {
     try{
         const requestedValues = req.body;

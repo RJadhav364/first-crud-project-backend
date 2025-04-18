@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 // import { jwtKey } from "../config/common.js";
+import "../config/dotenv.js"
 
 const Schema = mongoose.Schema;
 

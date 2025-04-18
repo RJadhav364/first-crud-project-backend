@@ -1,4 +1,5 @@
 // import { jwtKey } from "../config/common.js";
+import "../config/dotenv.js"
 import jwt from "jsonwebtoken"
 const verifyJWTToken = async(token) => {
     // const result = jwt.verify(token, jwtKey , async(err) => {
